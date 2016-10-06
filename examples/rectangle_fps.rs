@@ -4,7 +4,7 @@ extern crate rand;
 extern crate fps_counter;
 
 use piston_window::*;
-use graphics_tree::GraphicsTree;
+use graphics_tree::{GraphicsTree, TextureBuffer};
 use rand::{thread_rng, Rng};
 use fps_counter::FPSCounter;
 
@@ -16,6 +16,8 @@ fn main() {
         .unwrap();
 
     let ref mut graphics_tree = GraphicsTree::new();
+    let ref mut texture_buffer = TextureBuffer::new(window.factory.clone());
+
     let mut fps_counter = FPSCounter::new();
     let mut fps = 0;
     let n = std::env::args_os().nth(1)
@@ -29,7 +31,7 @@ fn main() {
                 draw(n, &c, graphics_tree);
             }
 
-            graphics_tree.draw(&c, g);
+            graphics_tree.draw(texture_buffer, g);
             fps = fps_counter.tick();
         });
         window.set_title(fps.to_string());
