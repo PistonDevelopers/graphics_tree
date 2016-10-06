@@ -7,7 +7,7 @@ use graphics_tree::{GraphicsTree, TextureBuffer};
 
 fn main() {
     let mut window: PistonWindow =
-        WindowSettings::new("graphics_tree: rectangle_fps", [512; 2])
+        WindowSettings::new("graphics_tree: image", [512; 2])
         .exit_on_esc(true)
         .build()
         .unwrap();

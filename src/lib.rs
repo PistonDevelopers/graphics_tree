@@ -50,7 +50,8 @@ pub struct TextureInner {
 
 /// Stores textures.
 pub struct TextureBuffer<F, T> {
-    factory: F,
+    /// The factory that creates textures.
+    pub factory: F,
     textures: HashMap<u64, T>,
     next_id: u64,
 }
@@ -145,6 +146,22 @@ impl GraphicsTree {
                             texture_buffer.textures.insert(texture_buffer.next_id, new_texture);
                             inner.id = Some(texture_buffer.next_id);
                             texture_buffer.next_id += 1;
+                        } else if inner.needs_update {
+                            // Create a new texture, because updating is not
+                            // supported directly yet.
+                            use texture::{Format, TextureSettings};
+
+                            let id = inner.id.unwrap();
+                            let (width, height) = inner.image.dimensions();
+                            let new_texture: T = CreateTexture::create(
+                                &mut texture_buffer.factory,
+                                Format::Rgba8,
+                                &inner.image,
+                                [width, height],
+                                &TextureSettings::new()
+                            ).unwrap_or_else(|_| panic!("Could not create texture"));
+                            texture_buffer.textures.insert(id, new_texture);
+                            inner.needs_update = false;
                         }
                         if let Some(texture) = texture_buffer.textures.get(&inner.id.unwrap()) {
                             texture
@@ -261,5 +278,15 @@ impl<F, T> TextureBuffer<F, T> {
             textures: HashMap::new(),
             next_id: 0,
         }
+    }
+}
+
+impl Texture {
+    /// Edit image.
+    pub fn with_image_mut<F>(&self, f: F)
+        where F: FnOnce(&mut RgbaImage) {
+        let mut inner = self.0.write().unwrap();
+        f(&mut inner.image);
+        inner.needs_update = true;
     }
 }
