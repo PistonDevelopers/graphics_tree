@@ -2,6 +2,13 @@
 name = "piston2d-graphics_tree"
 version = "0.1.0"
 authors = ["Sven Nilsen <bvssvni@gmail.com>"]
+license = "MIT OR Apache-2.0"
+keywords = ["graphics", "tree", "2d", "piston"]
+description = "A 2D graphics backend for Piston-Graphics that stores and optimizes commands"
+readme = "README.md"
+repository = "https://github.com/PistonDevelopers/graphics_tree.git"
+homepage = "https://github.com/PistonDevelopers/graphics_tree"
+exclude = ["assets/*"]
 
 [lib]
 name = "graphics_tree"
