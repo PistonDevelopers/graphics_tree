@@ -25,16 +25,14 @@ fn main() {
     let mut last_pos = None;
 
     while let Some(e) = window.next() {
-        if let Event::Render(_) = e {
-            window.draw_2d(&e, |c, g| {
-                if graphics_tree.is_empty() {
-                    clear([1.0; 4], graphics_tree);
-                    image(&canvas, c.transform, graphics_tree);
-                }
+        window.draw_2d(&e, |c, g| {
+            if graphics_tree.is_empty() {
+                clear([1.0; 4], graphics_tree);
+                image(&canvas, c.transform, graphics_tree);
+            }
 
-                graphics_tree.draw(texture_buffer, g);
-            });
-        }
+            graphics_tree.draw(texture_buffer, g);
+        });
         if let Some(button) = e.press_args() {
             if button == Button::Mouse(MouseButton::Left) {
                 draw = true;
