@@ -19,8 +19,8 @@ use texture::CreateTexture;
 /// A graphics backend that stores and optimizes commands
 pub struct GraphicsTree {
     commands: Vec<Command>,
-    vertices: Vec<f32>,
-    uvs: Vec<f32>,
+    vertices: Vec<[f32; 2]>,
+    uvs: Vec<[f32; 2]>,
     current_color: Color,
     current_draw_state: DrawState,
 }
@@ -220,7 +220,7 @@ impl Graphics for GraphicsTree {
         draw_state: &DrawState,
         color: &Color,
         mut f: F
-    ) where F: FnMut(&mut FnMut(&[f32])) {
+    ) where F: FnMut(&mut FnMut(&[[f32; 2]])) {
         if color != &self.current_color {
             self.commands.push(Command::ChangeColor(*color));
         }
@@ -238,7 +238,7 @@ impl Graphics for GraphicsTree {
         color: &[f32; 4],
         texture: &Self::Texture,
         mut f: F
-    ) where F: FnMut(&mut FnMut(&[f32], &[f32])) {
+    ) where F: FnMut(&mut FnMut(&[[f32; 2]], &[[f32; 2]])) {
         if color != &self.current_color {
             self.commands.push(Command::ChangeColor(*color));
         }

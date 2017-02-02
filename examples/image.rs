@@ -14,12 +14,7 @@ fn main() {
 
     let ref mut graphics_tree = GraphicsTree::new();
 
-    let img = im::open("assets/rust.png").unwrap();
-    let tex = match img {
-        im::DynamicImage::ImageRgba8(img) => img,
-        img => img.to_rgba()
-    }.into();
-
+    let tex = im::open("assets/rust.png").unwrap().to_rgba().into();
     let ref mut tx_buffer = TextureBuffer::new(window.factory.clone());
 
     while let Some(e) = window.next() {
