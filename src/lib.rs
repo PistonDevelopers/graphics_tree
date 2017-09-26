@@ -109,7 +109,7 @@ impl GraphicsTree {
                     let offset = range.offset;
                     let length = range.length;
                     let chunks = length / bufsize;
-                    g.tri_list(&draw_state, &color, |mut f| {
+                    g.tri_list(&draw_state, &color, |f| {
                         for i in 0..chunks {
                             let start = offset + chunks * i;
                             let end = start + bufsize;
@@ -172,7 +172,7 @@ impl GraphicsTree {
                         panic!("Image is used elsewhere");
                     };
 
-                    g.tri_list_uv(&draw_state, &color, texture, |mut f| {
+                    g.tri_list_uv(&draw_state, &color, texture, |f| {
                         for i in 0..chunks_v {
                             let start_v = offset_v + chunks_v * i;
                             let end_v = start_v + bufsize;
