@@ -16,7 +16,10 @@ fn main() {
         .unwrap();
 
     let ref mut graphics_tree = GraphicsTree::new();
-    let ref mut texture_buffer = TextureBuffer::new(window.factory.clone());
+    let ref mut texture_buffer = TextureBuffer::new(TextureContext {
+        factory: window.factory.clone(),
+        encoder: window.factory.create_command_buffer().into()
+    });
 
     let mut fps_counter = FPSCounter::new();
     let mut fps = 0;

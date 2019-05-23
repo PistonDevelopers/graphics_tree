@@ -15,7 +15,10 @@ fn main() {
     let ref mut graphics_tree = GraphicsTree::new();
 
     let tex = im::open("assets/rust.png").unwrap().to_rgba().into();
-    let ref mut tx_buffer = TextureBuffer::new(window.factory.clone());
+    let ref mut tx_buffer = TextureBuffer::new(TextureContext {
+        factory: window.factory.clone(),
+        encoder: window.factory.create_command_buffer().into()
+    });
 
     while let Some(e) = window.next() {
         window.draw_2d(&e, |c, g| {
