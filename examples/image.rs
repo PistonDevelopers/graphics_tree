@@ -21,7 +21,7 @@ fn main() {
     });
 
     while let Some(e) = window.next() {
-        window.draw_2d(&e, |c, g| {
+        window.draw_2d(&e, |c, g, _| {
             if graphics_tree.is_empty() {
                 clear([1.0; 4], graphics_tree);
                 image(&tex, c.transform, graphics_tree);

@@ -29,7 +29,7 @@ fn main() {
         .unwrap_or(17_000);;
 
     while let Some(e) = window.next() {
-        window.draw_2d(&e, |c, g| {
+        window.draw_2d(&e, |c, g, _| {
             if graphics_tree.is_empty() {
                 draw(n, &c, graphics_tree);
             }

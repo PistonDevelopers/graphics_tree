@@ -28,7 +28,7 @@ fn main() {
     let mut last_pos = None;
 
     while let Some(e) = window.next() {
-        window.draw_2d(&e, |c, g| {
+        window.draw_2d(&e, |c, g, _| {
             if graphics_tree.is_empty() {
                 clear([1.0; 4], graphics_tree);
                 image(&canvas, c.transform, graphics_tree);
