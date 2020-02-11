@@ -26,7 +26,7 @@ fn main() {
     let n = std::env::args_os().nth(1)
         .and_then(|s| s.into_string().ok())
         .and_then(|n| n.parse().ok())
-        .unwrap_or(17_000);;
+        .unwrap_or(17_000);
 
     while let Some(e) = window.next() {
         window.draw_2d(&e, |c, g, _| {
