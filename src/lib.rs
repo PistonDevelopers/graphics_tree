@@ -220,7 +220,7 @@ impl Graphics for GraphicsTree {
         draw_state: &DrawState,
         color: &Color,
         mut f: F
-    ) where F: FnMut(&mut FnMut(&[[f32; 2]])) {
+    ) where F: FnMut(&mut dyn FnMut(&[[f32; 2]])) {
         if color != &self.current_color {
             self.commands.push(Command::ChangeColor(*color));
         }
@@ -238,7 +238,7 @@ impl Graphics for GraphicsTree {
         color: &[f32; 4],
         texture: &Self::Texture,
         mut f: F
-    ) where F: FnMut(&mut FnMut(&[[f32; 2]], &[[f32; 2]])) {
+    ) where F: FnMut(&mut dyn FnMut(&[[f32; 2]], &[[f32; 2]])) {
         if color != &self.current_color {
             self.commands.push(Command::ChangeColor(*color));
         }
