@@ -21,6 +21,7 @@ pub struct GraphicsTree {
     commands: Vec<Command>,
     vertices: Vec<[f32; 2]>,
     uvs: Vec<[f32; 2]>,
+    colors: Vec<[f32; 4]>,
     current_color: Color,
     current_draw_state: DrawState,
 }
@@ -31,7 +32,9 @@ enum Command {
     ChangeColor(Color),
     ChangeDrawState(DrawState),
     Colored(Range),
+    Colors(Range, Range),
     Textured(Texture, Range, Range),
+    TexturedColor(Texture, Range, Range, Range),
 }
 
 /// Simplifies some common operations on textures.
@@ -63,6 +66,7 @@ impl GraphicsTree {
             commands: vec![],
             vertices: vec![],
             uvs: vec![],
+            colors: vec![],
             current_color: [0.0; 4],
             current_draw_state: Default::default(),
         }
@@ -72,7 +76,8 @@ impl GraphicsTree {
     pub fn is_empty(&self) -> bool {
         self.commands.len() == 0 &&
         self.vertices.len() == 0 &&
-        self.uvs.len() == 0
+        self.uvs.len() == 0 &&
+        self.colors.len() == 0
     }
 
     /// Clears all graphics.
@@ -80,6 +85,7 @@ impl GraphicsTree {
         self.commands.clear();
         self.vertices.clear();
         self.uvs.clear();
+        self.colors.clear();
     }
 
     /// Draws graphics to backend.
@@ -119,6 +125,31 @@ impl GraphicsTree {
                             let start = chunks * bufsize;
                             let len = length - start;
                             f(&self.vertices[offset + start..offset + len]);
+                        }
+                    });
+                }
+                Colors(vertex_range, color_range) => {
+                    let offset_v = vertex_range.offset;
+                    let length_v = vertex_range.length;
+                    let chunks_v = length_v / bufsize;
+                    let offset_c = color_range.offset;
+                    let length_c = color_range.length;
+                    let chunks_c = length_c / bufsize;
+                    g.tri_list_c(&draw_state, |f| {
+                        for i in 0..chunks_v {
+                            let start_v = offset_v + chunks_v * i;
+                            let end_v = start_v + bufsize;
+                            let start_c = offset_c + chunks_c * i;
+                            let end_c = start_c + bufsize;
+                            f(&self.vertices[start_v..end_v], &self.colors[start_c..end_c]);
+                        }
+                        if chunks_v * bufsize < length_v {
+                            let start_v = chunks_v * bufsize;
+                            let len_v = length_v - start_v;
+                            let start_c = chunks_c * bufsize;
+                            let len_c = length_c - start_c;
+                            f(&self.vertices[offset_v + start_v..offset_v + len_v],
+                              &self.colors[offset_c + start_c..offset_c + len_c]);
                         }
                     });
                 }
@@ -191,6 +222,84 @@ impl GraphicsTree {
                         }
                     });
                 }
+                TexturedColor(ref tex, vertex_range, uv_range, color_range) => {
+                    // Split range in chunks to respect `Graphics` interface.
+                    let offset_v = vertex_range.offset;
+                    let length_v = vertex_range.length;
+                    let chunks_v = length_v / bufsize;
+                    let offset_uv = uv_range.offset;
+                    let length_uv = uv_range.length;
+                    let chunks_uv = length_uv / bufsize;
+                    let offset_c = color_range.offset;
+                    let length_c = color_range.length;
+                    let chunks_c = length_c / bufsize;
+
+                    let texture = if let Ok(mut inner) = tex.0.write() {
+                        if inner.id.is_none() {
+                            use texture::{Format, TextureSettings};
+
+                            let (width, height) = inner.image.dimensions();
+                            let new_texture: T = CreateTexture::create(
+                                &mut texture_buffer.factory,
+                                Format::Rgba8,
+                                &inner.image,
+                                [width, height],
+                                &TextureSettings::new()
+                            ).unwrap_or_else(|_| panic!("Could not create texture"));
+                            texture_buffer.textures.insert(texture_buffer.next_id, new_texture);
+                            inner.id = Some(texture_buffer.next_id);
+                            texture_buffer.next_id += 1;
+                        } else if inner.needs_update {
+                            // Create a new texture, because updating is not
+                            // supported directly yet.
+                            use texture::{Format, TextureSettings};
+
+                            let id = inner.id.unwrap();
+                            let (width, height) = inner.image.dimensions();
+                            let new_texture: T = CreateTexture::create(
+                                &mut texture_buffer.factory,
+                                Format::Rgba8,
+                                &inner.image,
+                                [width, height],
+                                &TextureSettings::new()
+                            ).unwrap_or_else(|_| panic!("Could not create texture"));
+                            texture_buffer.textures.insert(id, new_texture);
+                            inner.needs_update = false;
+                        }
+                        if let Some(texture) = texture_buffer.textures.get(&inner.id.unwrap()) {
+                            texture
+                        } else {
+                            panic!("Texture does not exist");
+                        }
+                    } else {
+                        panic!("Image is used elsewhere");
+                    };
+
+                    g.tri_list_uv_c(&draw_state, texture, |f| {
+                        for i in 0..chunks_v {
+                            let start_v = offset_v + chunks_v * i;
+                            let end_v = start_v + bufsize;
+                            let start_uv = offset_uv + chunks_uv * i;
+                            let end_uv = start_uv + bufsize;
+                            let start_c = offset_c + chunks_c * i;
+                            let end_c = start_c + bufsize;
+                            f(&self.vertices[start_v..end_v],
+                              &self.uvs[start_uv..end_uv],
+                              &self.colors[start_c..end_c]);
+                        }
+                        if chunks_v * bufsize < length_v {
+                            let start_v = chunks_v * bufsize;
+                            let len_v = length_v - start_v;
+                            let start_uv = chunks_uv * bufsize;
+                            let len_uv = length_uv - start_uv;
+                            let start_c = chunks_c * bufsize;
+                            let len_c = length_c - start_c;
+                            f(&self.vertices[offset_v + start_v..offset_v + len_v],
+                              &self.uvs[offset_uv + start_uv..offset_uv + len_uv],
+                              &self.colors[offset_c + start_c..offset_c + len_c]);
+                        }
+                    });
+                }
             }
         }
     }
@@ -232,6 +341,26 @@ impl Graphics for GraphicsTree {
         self.commands.push(Command::Colored(Range::new(start, self.vertices.len() - start)));
     }
 
+    fn tri_list_c<F>(
+        &mut self,
+        draw_state: &DrawState,
+        mut f: F
+    ) where F: FnMut(&mut dyn FnMut(&[[f32; 2]], &[[f32; 4]])) {
+        if draw_state != &self.current_draw_state {
+            self.commands.push(Command::ChangeDrawState(*draw_state));
+        }
+        let start_v = self.vertices.len();
+        let start_c = self.colors.len();
+        f(&mut |chunk, chunk_color| {
+            self.vertices.extend_from_slice(chunk);
+            self.colors.extend_from_slice(chunk_color);
+        });
+        self.commands.push(Command::Colors(
+            Range::new(start_v, self.vertices.len() - start_v),
+            Range::new(start_c, self.colors.len() - start_c)
+        ));
+    }
+
     fn tri_list_uv<F>(
         &mut self,
         draw_state: &DrawState,
@@ -255,6 +384,31 @@ impl Graphics for GraphicsTree {
             texture.clone(),
             Range::new(start_vertices, self.vertices.len() - start_vertices),
             Range::new(start_uvs, self.uvs.len() - start_uvs)
+        ));
+    }
+
+    fn tri_list_uv_c<F>(
+        &mut self,
+        draw_state: &DrawState,
+        texture: &Self::Texture,
+        mut f: F
+    ) where F: FnMut(&mut dyn FnMut(&[[f32; 2]], &[[f32; 2]], &[[f32; 4]])) {
+        if draw_state != &self.current_draw_state {
+            self.commands.push(Command::ChangeDrawState(*draw_state));
+        }
+        let start_vertices = self.vertices.len();
+        let start_uvs = self.uvs.len();
+        let start_c = self.colors.len();
+        f(&mut |chunk, chunk_uvs, chunk_c| {
+            self.vertices.extend_from_slice(chunk);
+            self.uvs.extend_from_slice(chunk_uvs);
+            self.colors.extend_from_slice(chunk_c);
+        });
+        self.commands.push(Command::TexturedColor(
+            texture.clone(),
+            Range::new(start_vertices, self.vertices.len() - start_vertices),
+            Range::new(start_uvs, self.uvs.len() - start_uvs),
+            Range::new(start_c, self.colors.len() - start_c)
         ));
     }
 }
