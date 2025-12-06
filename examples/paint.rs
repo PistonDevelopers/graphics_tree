@@ -8,20 +8,15 @@ use vecmath::{vec2_len, vec2_sub};
 use graphics_tree::{GraphicsTree, TextureBuffer};
 
 fn main() {
-    let opengl = OpenGL::V3_2;
     let (width, height) = (300, 300);
     let mut window: PistonWindow =
         WindowSettings::new("graphics_tree: paint", (width, height))
         .exit_on_esc(true)
-        .graphics_api(opengl)
         .build()
         .unwrap();
 
     let ref mut graphics_tree = GraphicsTree::new();
-    let ref mut texture_buffer = TextureBuffer::new(TextureContext {
-        factory: window.factory.clone(),
-        encoder: window.factory.create_command_buffer().into()
-    });
+    let ref mut texture_buffer = TextureBuffer::new(window.create_texture_context());
 
     let canvas = im::ImageBuffer::new(width, height).into();
     let mut draw = false;
@@ -29,6 +24,8 @@ fn main() {
 
     while let Some(e) = window.next() {
         window.draw_2d(&e, |c, g, _| {
+            use graphics::*;
+
             if graphics_tree.is_empty() {
                 clear([1.0; 4], graphics_tree);
                 image(&canvas, c.transform, graphics_tree);
@@ -51,7 +48,6 @@ fn main() {
         if draw {
             if let Some(pos) = e.mouse_cursor_args() {
                 let (x, y) = (pos[0] as f32, pos[1] as f32);
-
                 if let Some(p) = last_pos {
                     canvas.with_image_mut(|canvas| {
                         let (last_x, last_y) = (p[0] as f32, p[1] as f32);
