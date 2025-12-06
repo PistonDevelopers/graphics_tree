@@ -7,6 +7,7 @@ use piston_window::*;
 use graphics_tree::{GraphicsTree, TextureBuffer};
 use rand::{thread_rng, Rng};
 use fps_counter::FPSCounter;
+use graphics::{Context, Graphics};
 
 fn main() {
     let mut window: PistonWindow =
@@ -16,10 +17,7 @@ fn main() {
         .unwrap();
 
     let ref mut graphics_tree = GraphicsTree::new();
-    let ref mut texture_buffer = TextureBuffer::new(TextureContext {
-        factory: window.factory.clone(),
-        encoder: window.factory.create_command_buffer().into()
-    });
+    let ref mut texture_buffer = TextureBuffer::new(window.create_texture_context());
 
     let mut fps_counter = FPSCounter::new();
     let mut fps = 0;
@@ -44,6 +42,8 @@ fn main() {
 }
 
 fn draw<G: Graphics>(n: u32, c: &Context, g: &mut G) {
+    use graphics::*;
+
     clear([1.0; 4], g);
 
     let mut rng = thread_rng();
